@@ -1,1 +1,618 @@
+<!DOCTYPE html>
 
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Péndulo Simple — Simulador</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+
+```
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #0f0f0e;
+  --surface:  #1a1a18;
+  --surface2: #222220;
+  --border:   rgba(255,255,255,0.08);
+  --border2:  rgba(255,255,255,0.15);
+  --text:     #e8e6df;
+  --muted:    #888780;
+  --teal:     #5DCAA5;
+  --teal-d:   #0F6E56;
+  --blue:     #378ADD;
+  --rose:     #D4537E;
+  --amber:    #EF9F27;
+  --mono:     'IBM Plex Mono', monospace;
+  --sans:     'IBM Plex Sans', sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-weight: 300;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 1rem 4rem;
+}
+
+header {
+  width: 100%;
+  max-width: 860px;
+  margin-bottom: 2rem;
+  border-bottom: 0.5px solid var(--border);
+  padding-bottom: 1rem;
+}
+
+header h1 {
+  font-family: var(--mono);
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--teal);
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+header p {
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-family: var(--mono);
+}
+
+.equation {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--amber);
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-left: 2px solid var(--amber);
+  padding: 0.6rem 1rem;
+  border-radius: 0 6px 6px 0;
+  margin-bottom: 1.5rem;
+  width: 100%;
+  max-width: 860px;
+}
+
+.app {
+  width: 100%;
+  max-width: 860px;
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 16px;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.panel {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.panel-title {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.9rem;
+}
+
+.slider-row {
+  margin-bottom: 0.85rem;
+}
+
+.slider-row:last-child { margin-bottom: 0; }
+
+.slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 5px;
+}
+
+.slider-label {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-family: var(--mono);
+}
+
+.slider-val {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text);
+  font-family: var(--mono);
+}
+
+input[type=range] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 3px;
+  background: var(--border2);
+  border-radius: 2px;
+  outline: none;
+}
+
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--teal);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+input[type=range]::-webkit-slider-thumb:hover { background: #7fe0bc; }
+
+.metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.metric {
+  background: var(--surface2);
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.metric-label {
+  font-size: 0.65rem;
+  font-family: var(--mono);
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+
+.metric-value {
+  font-size: 1rem;
+  font-weight: 500;
+  font-family: var(--mono);
+  color: var(--text);
+}
+
+.metric-value.teal  { color: var(--teal); }
+.metric-value.blue  { color: var(--blue); }
+.metric-value.rose  { color: var(--rose); }
+.metric-value.amber { color: var(--amber); }
+
+.btn-row {
+  display: flex;
+  gap: 8px;
+}
+
+button {
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: 0.5px solid var(--border2);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+button:hover { background: var(--surface2); color: var(--text); }
+button.active { border-color: var(--teal); color: var(--teal); }
+
+.main-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tab-row {
+  display: flex;
+  gap: 6px;
+}
+
+.tab-row button {
+  flex: none;
+  padding: 5px 14px;
+}
+
+#canvas-wrap {
+  flex: 1;
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  height: 420px;
+}
+
+#main-canvas { display: block; }
+
+.info-box {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: 1.7;
+  font-family: var(--mono);
+}
+
+.info-box strong { color: var(--text); font-weight: 500; }
+
+@media (max-width: 640px) {
+  .app { grid-template-columns: 1fr; }
+  #canvas-wrap { height: 300px; }
+}
+```
+
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>péndulo simple — simulador dinámico</h1>
+  <p>modelo sin fricción · integración runge-kutta 4to orden</p>
+</header>
+
+<div class="equation">
+  d²θ/dt² = −(g/l) · sin(θ)
+</div>
+
+<div class="app">
+
+  <div class="sidebar">
+
+```
+<div class="panel">
+  <div class="panel-title">parámetros</div>
+
+  <div class="slider-row">
+    <div class="slider-header">
+      <span class="slider-label">longitud l</span>
+      <span class="slider-val" id="vl">1.0 m</span>
+    </div>
+    <input type="range" min="0.2" max="3" step="0.1" value="1" id="sl-l">
+  </div>
+
+  <div class="slider-row">
+    <div class="slider-header">
+      <span class="slider-label">gravedad g</span>
+      <span class="slider-val" id="vg">9.8 m/s²</span>
+    </div>
+    <input type="range" min="1" max="20" step="0.5" value="9.8" id="sl-g">
+  </div>
+
+  <div class="slider-row">
+    <div class="slider-header">
+      <span class="slider-label">ángulo inicial θ₀</span>
+      <span class="slider-val" id="vth">30°</span>
+    </div>
+    <input type="range" min="1" max="175" step="1" value="30" id="sl-th">
+  </div>
+
+  <div class="slider-row">
+    <div class="slider-header">
+      <span class="slider-label">velocidad inicial ω₀</span>
+      <span class="slider-val" id="vv">0.0 rad/s</span>
+    </div>
+    <input type="range" min="-6" max="6" step="0.1" value="0" id="sl-v">
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-title">estado actual</div>
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-label">θ (°)</div>
+      <div class="metric-value teal" id="m-theta">30.0</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">ω (rad/s)</div>
+      <div class="metric-value blue" id="m-omega">0.00</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">período T</div>
+      <div class="metric-value amber" id="m-period">2.01 s</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">energía E</div>
+      <div class="metric-value rose" id="m-energy">0.00 J</div>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-title">control</div>
+  <div class="btn-row">
+    <button id="btn-play" class="active">⏸ pausar</button>
+    <button id="btn-reset">↺ reiniciar</button>
+  </div>
+</div>
+
+<div class="info-box">
+  <strong>espacio de fases:</strong> prueba θ₀ = 179° para ver la separatriz — frontera entre oscilación y rotación completa.<br><br>
+  <strong>θ(t):</strong> ángulos grandes producen períodos más largos que el T lineal = 2π√(l/g).
+</div>
+```
+
+  </div>
+
+  <div class="main-panel">
+    <div class="tab-row">
+      <button class="active" id="tab-pend"  onclick="showTab('pend')">péndulo</button>
+      <button id="tab-phase" onclick="showTab('phase')">espacio de fases</button>
+      <button id="tab-time"  onclick="showTab('time')">θ(t)</button>
+    </div>
+
+```
+<div id="canvas-wrap">
+  <canvas id="main-canvas"></canvas>
+</div>
+```
+
+  </div>
+
+</div>
+
+<script>
+const PI = Math.PI;
+let l=1, g=9.8, th0=30*PI/180, v0=0;
+let theta=th0, omega=v0, t=0, dt=0.016;
+let running=true, activeTab='pend';
+let phaseData=[], timeData=[];
+
+const C = {
+  bg:     '#0f0f0e',
+  surface:'#1a1a18',
+  grid:   'rgba(255,255,255,0.06)',
+  muted:  '#666663',
+  text:   '#e8e6df',
+  teal:   '#5DCAA5',
+  blue:   '#378ADD',
+  rose:   '#D4537E',
+  amber:  '#EF9F27',
+  rod:    '#555553',
+};
+
+function getCanvas() {
+  const wrap = document.getElementById('canvas-wrap');
+  const c = document.getElementById('main-canvas');
+  const W = wrap.clientWidth, H = wrap.clientHeight;
+  if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+  return c;
+}
+
+function rk4(th, om) {
+  const f1=om,          g1=-(g/l)*Math.sin(th);
+  const f2=om+.5*dt*g1, g2=-(g/l)*Math.sin(th+.5*dt*f1);
+  const f3=om+.5*dt*g2, g3=-(g/l)*Math.sin(th+.5*dt*f2);
+  const f4=om+dt*g3,    g4=-(g/l)*Math.sin(th+dt*f3);
+  return [th+dt*(f1+2*f2+2*f3+f4)/6, om+dt*(g1+2*g2+2*g3+g4)/6];
+}
+
+function energy() {
+  const m=1;
+  const KE = 0.5*m*l*l*omega*omega;
+  const PE = m*g*l*(1-Math.cos(theta));
+  return (KE+PE).toFixed(3);
+}
+
+function drawPendulum(canvas) {
+  const W=canvas.width, H=canvas.height, ctx=canvas.getContext('2d');
+  ctx.fillStyle=C.surface; ctx.fillRect(0,0,W,H);
+
+  const ox=W/2, oy=H*0.13, sc=Math.min(W,H)*0.62;
+  const px=ox+sc*Math.sin(theta), py=oy+sc*Math.cos(theta);
+
+  // guías angulares
+  ctx.strokeStyle=C.grid; ctx.lineWidth=1;
+  for(let a=-PI; a<=PI; a+=PI/6){
+    ctx.beginPath(); ctx.moveTo(ox,oy);
+    ctx.lineTo(ox+sc*Math.sin(a), oy+sc*Math.cos(a)); ctx.stroke();
+  }
+
+  // arco de trayectoria
+  ctx.strokeStyle='rgba(93,202,165,0.15)'; ctx.lineWidth=sc*2;
+  ctx.beginPath(); ctx.arc(ox, oy, sc, -PI/2, PI/2*3); ctx.stroke();
+
+  // varilla
+  ctx.strokeStyle=C.rod; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(px,py); ctx.stroke();
+
+  // pivote
+  ctx.beginPath(); ctx.arc(ox,oy,5,0,2*PI);
+  ctx.fillStyle=C.rod; ctx.fill();
+
+  // bob con brillo
+  const r = Math.max(12, sc*0.07);
+  const grad = ctx.createRadialGradient(px-r*0.3, py-r*0.3, r*0.1, px, py, r);
+  grad.addColorStop(0, '#6bd4f0');
+  grad.addColorStop(1, C.blue);
+  ctx.beginPath(); ctx.arc(px,py,r,0,2*PI);
+  ctx.fillStyle=grad; ctx.fill();
+
+  // etiquetas
+  ctx.font='12px "IBM Plex Mono", monospace'; ctx.fillStyle=C.muted;
+  ctx.textAlign='left';  ctx.fillText('θ = '+(theta*180/PI).toFixed(1)+'°', 14, H-14);
+  ctx.textAlign='right'; ctx.fillText('ω = '+omega.toFixed(3)+' rad/s', W-14, H-14);
+  ctx.textAlign='center'; ctx.fillStyle=C.teal;
+  ctx.fillText('l = '+l.toFixed(1)+' m', ox, oy+sc+20);
+}
+
+function drawPhase(canvas) {
+  const W=canvas.width, H=canvas.height, ctx=canvas.getContext('2d');
+  ctx.fillStyle=C.surface; ctx.fillRect(0,0,W,H);
+
+  const pad=48, pw=W-pad*2, ph=H-pad*2;
+  const cx=pad+pw/2, cy=pad+ph/2;
+  const sx=pw/(4*PI), sy=ph/14;
+
+  // grid
+  ctx.strokeStyle=C.grid; ctx.lineWidth=1;
+  for(let a=-2*PI; a<=2*PI; a+=PI/2){
+    const x=cx+a*sx;
+    ctx.beginPath(); ctx.moveTo(x,pad); ctx.lineTo(x,pad+ph); ctx.stroke();
+  }
+  for(let v=-6; v<=6; v+=2){
+    const y=cy-v*sy;
+    ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(pad+pw,y); ctx.stroke();
+  }
+
+  // ejes
+  ctx.strokeStyle=C.muted; ctx.lineWidth=0.5;
+  ctx.beginPath(); ctx.moveTo(pad,cy); ctx.lineTo(pad+pw,cy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx,pad); ctx.lineTo(cx,pad+ph); ctx.stroke();
+
+  // etiquetas ejes
+  ctx.fillStyle=C.muted; ctx.font='11px "IBM Plex Mono", monospace';
+  [[-2*PI,'-2π'],[-PI,'-π'],[0,'0'],[PI,'π'],[2*PI,'2π']].forEach(([a,lbl])=>{
+    ctx.textAlign='center';
+    ctx.fillText(lbl, cx+a*sx, cy+16);
+  });
+  ctx.textAlign='right';
+  ctx.fillText('ω', pad+2, pad+12);
+  ctx.textAlign='left';
+  ctx.fillText('θ', pad+pw, cy-6);
+
+  // traza
+  if(phaseData.length > 1){
+    ctx.strokeStyle=C.rose; ctx.lineWidth=1.5; ctx.beginPath();
+    phaseData.forEach(([th,om],i)=>{
+      const x=cx+th*sx, y=cy-om*sy;
+      i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+  }
+
+  // punto actual
+  const x=cx+theta*sx, y=cy-omega*sy;
+  ctx.beginPath(); ctx.arc(x,y,5,0,2*PI);
+  ctx.fillStyle=C.teal; ctx.fill();
+}
+
+function drawTime(canvas) {
+  const W=canvas.width, H=canvas.height, ctx=canvas.getContext('2d');
+  ctx.fillStyle=C.surface; ctx.fillRect(0,0,W,H);
+
+  const pad={l:50,r:20,t:20,b:36};
+  const pw=W-pad.l-pad.r, ph=H-pad.t-pad.b;
+  const cy=pad.t+ph/2;
+
+  // grid horizontal
+  ctx.strokeStyle=C.grid; ctx.lineWidth=1;
+  [-PI, -PI/2, 0, PI/2, PI].forEach(v=>{
+    const y=cy-(v/PI)*(ph/2);
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+pw,y); ctx.stroke();
+  });
+
+  // eje cero
+  ctx.strokeStyle=C.muted; ctx.lineWidth=0.5;
+  ctx.beginPath(); ctx.moveTo(pad.l,cy); ctx.lineTo(pad.l+pw,cy); ctx.stroke();
+
+  // etiquetas eje Y
+  ctx.fillStyle=C.muted; ctx.font='11px "IBM Plex Mono", monospace'; ctx.textAlign='right';
+  [['π',PI],['π/2',PI/2],['0',0],['-π/2',-PI/2],['-π',-PI]].forEach(([lbl,v])=>{
+    const y=cy-(v/PI)*(ph/2);
+    ctx.fillText(lbl, pad.l-6, y+4);
+  });
+
+  // curva θ(t)
+  if(timeData.length > 1){
+    const win=25, tmax=timeData[timeData.length-1][0];
+    const tmin=Math.max(0, tmax-win);
+    const vis=timeData.filter(d=>d[0]>=tmin);
+
+    ctx.strokeStyle=C.teal; ctx.lineWidth=2; ctx.beginPath();
+    vis.forEach(([tt,th],i)=>{
+      const x=pad.l+((tt-tmin)/win)*pw;
+      const y=cy-(th/PI)*(ph/2);
+      i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+  }
+
+  // etiquetas
+  ctx.fillStyle=C.muted; ctx.textAlign='left';
+  ctx.fillText('θ(t)', pad.l+4, pad.t+14);
+  ctx.fillText('t (s) →', pad.l+pw-50, pad.t+ph+28);
+}
+
+function draw() {
+  const canvas = getCanvas();
+  if (activeTab==='pend')  drawPendulum(canvas);
+  else if (activeTab==='phase') drawPhase(canvas);
+  else drawTime(canvas);
+}
+
+function updateMetrics() {
+  document.getElementById('m-theta').textContent  = (theta*180/PI).toFixed(1)+'°';
+  document.getElementById('m-omega').textContent  = omega.toFixed(3);
+  document.getElementById('m-period').textContent = (2*PI*Math.sqrt(l/g)).toFixed(2)+' s';
+  document.getElementById('m-energy').textContent = energy()+' J';
+}
+
+function step() {
+  if(running){
+    [theta, omega] = rk4(theta, omega);
+    t += dt;
+    phaseData.push([theta, omega]);
+    timeData.push([t, theta]);
+    if(phaseData.length > 1500) phaseData.shift();
+    if(timeData.length > 3000)  timeData.splice(0, 500);
+  }
+  draw();
+  updateMetrics();
+  requestAnimationFrame(step);
+}
+
+function reset() {
+  l   = parseFloat(document.getElementById('sl-l').value);
+  g   = parseFloat(document.getElementById('sl-g').value);
+  th0 = parseFloat(document.getElementById('sl-th').value)*PI/180;
+  v0  = parseFloat(document.getElementById('sl-v').value);
+  theta=th0; omega=v0; t=0; phaseData=[]; timeData=[];
+}
+
+window.showTab = function(tab) {
+  activeTab = tab;
+  ['pend','phase','time'].forEach(n=>{
+    document.getElementById('tab-'+n).classList.toggle('active', n===tab);
+  });
+};
+
+document.getElementById('sl-l').oninput = e => {
+  document.getElementById('vl').textContent = parseFloat(e.target.value).toFixed(1)+' m'; reset();
+};
+document.getElementById('sl-g').oninput = e => {
+  document.getElementById('vg').textContent = parseFloat(e.target.value).toFixed(1)+' m/s²'; reset();
+};
+document.getElementById('sl-th').oninput = e => {
+  document.getElementById('vth').textContent = e.target.value+'°'; reset();
+};
+document.getElementById('sl-v').oninput = e => {
+  document.getElementById('vv').textContent = parseFloat(e.target.value).toFixed(1)+' rad/s'; reset();
+};
+document.getElementById('btn-play').onclick = () => {
+  running = !running;
+  document.getElementById('btn-play').textContent = running ? '⏸ pausar' : '▶ reanudar';
+};
+document.getElementById('btn-reset').onclick = reset;
+
+window.addEventListener('resize', () => {
+  const c = document.getElementById('main-canvas');
+  c.width = 0; c.height = 0;
+});
+
+step();
+</script>
+
+</body>
+</html>
